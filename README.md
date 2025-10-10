@@ -1,2 +1,2 @@
-# RDSB-ISA
-RDSB-ISA, stands for Randomly Designed &amp; Somewhat Buggy Instruction Set Architecture
+# PANDA
+PANDA, stands for Pretty Average, Not-well Designed Architecture. It's a load-store like instruction set architecture.
