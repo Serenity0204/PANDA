@@ -1,19 +1,35 @@
 # Spec
 
-## Team Members
+## Table of Contents
+0. [Team Members](#0-team-members)
+1. [Introduction](#1-introduction)
+2. [Architectural Overview](#2-architectural-overview)
+3. [Machine Specification](#3-machine-specification)
+   - [Instruction Formats](#instruction-formats)
+   - [Operations](#operations)
+   - [Internal Operands](#internal-operands)
+   - [Control Flow (Branches)](#control-flow-branches)
+   - [Addressing Modes](#addressing-modes)
+4. [Programmer’s Model [Lite]](#programmers-model-lite)
+5. [Program Implementation](#5-program-implementation)
+   - [Program 1 — Maximum and Minimum Hamming Distance](#program-1-pseudocode)
+   - [Program 2 — A × B Signed Multiplication](#program-2-pseudocode)
+   - [Program 3 — A × B × C Signed Multiplication](#program-3-pseudocode)
+
+## 0. Team Members
 
 | Team Member | PID |
 |-------------|-----|
 | Yu-Heng Lin | A18502009 |
 | Linfeng Zhang | A18519381 |
 
-## Introduction
+## 1. Introduction
 The name of this architecture is **PANDA**, stands for *pretty average, not-well designed architecture*. The main goal of this ISA is to provide a smooth and user-friendly programming experience when coding in the PANDA assembly. To achieve this, we designed a special encoding and instructions to provide a large number of registers(16 General Purpose Registers). Additionally, we introduced macro instructions that expand into lower-level instructions, improving usability and readability. The PANDA machine follows a load-store architecture, so users who are familiar with ARMS and MIPS can easily transition to PANDA.
 
-## Architectural Overview
-![Architecture Overview](img/architecture-overview.png)
+## 2. Architectural Overview
+![Architectural View](../img/architecture-overview.png)
 
-## Machine Specification
+## 3. Machine Specification
 
 ### Instruction Formats
 | TYPE | FORMAT | CORRESPONDING INSTRUCTIONS |
@@ -33,7 +49,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 |2| ADC = arithmetic add with carry | R | 0001 | 4 bits opcode (0001), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADC R0, R1 ⇔ 0001_0_00_01`, `ADC R0, IM ⇔ 0001_1_00_xx`| After `ADC`, `R0` holds result of `R0 + R1 + CARRY/R0 + IM + CARRY`, after done with `ADC`, special purpose register will be reset to 0, a.k.a `CARRY=0`|
 |3| SUB = arithmetic sub | R | 0010 | 4 bits opcode (0010), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `SUB R0, R1 ⇔ 0010_0_00_01`, `SUB R0, IM ⇔ 0010_1_00_xx`| After `SUB`, `R0` holds result of `R0 - R1/R0 - IM`|
 |4| AND = logical and | R | 0011 | 4 bits opcode (0011), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `AND R0, R1 ⇔ 0011_0_00_01`, `AND R0, IM ⇔ 0011_1_00_xx`| After `AND`, `R0` holds result of `R0 & R1/R0 & IM`|
-|5| OR = logical or | R | 0100 | 4 bits opcode (0100), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `OR R0, R1 ⇔ 0100_0_00_01`, `OR R0, IM ⇔ 0100_1_00_xx`| After `OR`, `R0` holds result of `R0 \| R1/R0 \| IM`|
+|5| OR = logical or | R | 0100 | 4 bits opcode (0100), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `OR R0, R1 ⇔ 0100_0_00_01`, `OR R0, IM ⇔ 0100_1_00_xx`| After `OR`, `R0` holds result of `R0 or R1/R0 or IM`|
 |6| XOR = logical xor | R | 0101 | 4 bits opcode (0101), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `XOR R0, R1 ⇔ 0101_0_00_01`, `XOR R0, IM ⇔ 0101_1_00_xx`| After `XOR`, `R0` holds result of `R0 ^ R1/R0 ^ IM`|
 |7| MOV = MOVE value from one reg to the other | R | 0110 | 4 bits opcode (0110), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `MOV R0, R1 ⇔ 0110_0_00_01`, `MOV R0, IM ⇔ 0110_1_00_xx`| After `MOV`, `R0` holds result of `R1/IM`|
 |8| BLT = branch if less than | B | 0111 | 4 bits opcode (0111), 1 bit for choosing relative branching(0) or absolute branching(1), 4 bits(xxxx) for the relative address/LUT index. If the LT register is set, the program counter(PC) will be set to either </br>1. relative branching: PC += instruction size * 2's comp of relative address</br> 2. absolute branching PC = LUT[index] | `BLT_RELATIVE 4 ⇔ 0111_0_0100`, `BLT_ABSOLUTE 12 ⇔ 0111_1_1100`| After `BLT`, `PC` will be updated to the value previously described|
@@ -48,7 +64,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 
 
 
-## Internal Operands
+### Internal Operands
 There are 16 general purpose registers, 7 special purpose registers.
 
 | Register | Purpose | Note |
@@ -64,36 +80,44 @@ There are 16 general purpose registers, 7 special purpose registers.
 
 
 
-## Control Flow (Branches)
-| Branch Type | Target Address Calculation | Max Distance | Notes |
+### Control Flow (Branches)
+Both relative and absolute branching are supported. For both relative and absolute branching, it will be using the extracted 4 bits. </br>
+1. Relative branching: user can branch to max of 8 instructions before the PC, or max of 7 instructions after the PC. So [-8, 7] is the range.
+2. Absolute Branching: user can branch to an absolute address that's hardcoded and stored in the LUT, the 4 bits will be unsigned and will be the index of the LUT. The values inside the LUT can be address of any instruction in the program. So this will be the way to handle large jumps.
+
+Below is the method of using branching in PANDA:
+| Branch Type | Target Address Mode | Example Call | Notes |
 |-------------|----------------------------|--------------|-------|
-| beq         | PC-relative                | Example value | Example notes |
-| bne         | PC-relative                | Example value | Example notes |
-| jmp         | Absolute/PC-relative       | Example value | Handles long jumps |
+| BEQ | RELATIVE/ABSOLUTE          | BEQ_ABSOLUTE/BEQ_RELATIVE | See concrete examples in the operation chart|
+| BLT | RELATIVE/ABSOLUTE          | BLT_ABSOLUTE/BLT_RELATIVE | See concrete examples in the operation chart|
+| BGT | RELATIVE/ABSOLUTE          | BGT_ABSOLUTE/BGT_RELATIVE | See concrete examples in the operation chart|
 
 
-## Addressing Modes
-| Addressing Mode | Description | Example Instruction | Example Meaning |
-|-----------------|-------------|----------------------|-----------------|
-| Immediate       | Operand is given directly in the instruction | `addi R1, R0, #5` | Load constant 5 into R1 |
-| Direct (Absolute) | Instruction specifies the memory address | `load R1, 100` | Load contents of memory[100] into R1 |
-| Indirect        | Instruction specifies a register that holds the memory address | `load R1, (R2)` | Load contents of memory at address in R2 into R1 |
-| Register        | Operand is in a register | `add R1, R2, R3` | R1 = R2 + R3 |
-| Register Indirect + Offset | Uses base register plus offset | `load R1, 4(R2)` | R1 = memory[R2 + 4] |
-| PC-relative     | Address is relative to current program counter (used in branches) | `beq R1, R2, label` | If R1==R2, branch to PC + offset(label) |
+### Addressing Modes
+Only indirect addressing is supported. If user wants to use immediate as operands for load/store or any other operations, they will have to be done by using the special `LOAD_IMMEDIATE` instruction. All of the immediates will be stored in a LUT, users can use indices to access the LUT and load the actual immediate into an `IM` special register, and use `IM` instead.
+
+- Example
+```PANDA
+// assume R1 = 10
+// assume IM = 300
+LOAD R1, R0 // this will be R1 <- memory[R0] = memory[10]
+LOAD R1, IM // this will be R1 <- memory[IM] = memory[300]
+```
 
 ## Programmer’s Model [Lite]
-| Concept | Description |
-|---------|-------------|
-| Programming Strategy | Describe how programmers should think about your machine. For example: "Load values into registers first, compute, then store results back to memory." |
-| Memory Usage | Explain how often memory should be accessed vs. registers. Example: "Prefer registers for temporary values to reduce memory stalls." |
-| Branching | Describe how programmers handle control flow. Example: "Use PC-relative branches for loops, and jump for function calls." |
-| Instruction Set | Note if instructions are inspired by MIPS/ARM, or custom. |
-| Restrictions | If you cannot directly copy MIPS/ARM ops, explain how you adapted. Example: "Instead of a dedicated `mul`, we provide a shift-and-add routine." |
+
+1. Programmer's Strategy: The user should prioritize using as many general purpose registers provided as possible by utilizing the special `SET_REG` instruction. If all of the GPRs are used, the user can load/store stuff from/to memory, the memory operation can happen in between of other operations. If the user wants to use immediate, they must do it via the `LOAD_IMMEDIATE` instructions. For branching, the user can choose to branch relatively or absolutely, whichever they favor to choose.
+
+4. Restrictions: Copying instructions from ARMS/MIPS generally won't work out of the box, due to the PANDA ISA needed `SET_REG` to use the other general purpose registers besides `R0-R3`. Other than that, the user should be careful using the store command in PANDA, since the operands order is differed from ARMS/MIPS(see the operation chart). Other than that, most of the common operations are supported in the PANDA ISA.
 
 
-## Program Implementation
-- Program 1 Pseudocode
+
+## 5. Program Implementation
+
+
+### Program 1 Pseudocode
+- Closest pair -- Write a program to find the smallest and largest Hamming distances among all pairs of values in an array of 16 bytes. Assume all values are 8-bit integers. The array of integers starts at location 0. Write the minimum distance in location 16 and the maximum distance in location 17. 
+
 ```c
 #include <stdint.h>
 #include <stdio.h>
@@ -163,7 +187,9 @@ int main()
 
 ```
 
-- Program 2 Pseudocode
+### Program 2 Pseudocode
+- 2-Term Product – For full credit, write a program that finds the product of two two’s complement numbers, ie, A * B. The operands are found in memory locations 0 (A), and 1 (B).  The result will be written into locations 2 (high bits) and 3 (low bits). Your ISA will not have a one-cycle “multiply” operation, so you will need some sort of shift-and-add algorithm. You may restrict your values to positive numbers (MSB = 0) only, with a 1/3-letter grade penalty for the course. 
+
 ```c
 #include <stdint.h>
 #include <stdio.h>
@@ -231,7 +257,9 @@ int main()
 
 ``` 
 
-- Program 3 Pseudocode
+### Program 3 Pseudocode
+- 3-Term Product – For full credit, write a program that finds the product of three two’s complement numbers, ie, A * B * C. The operands are found in memory locations 0 (A), and 1 (B), and 2 (C).  The result will be written into locations 4 (highest bits), 5 (middle bits), and 6 (low bits). Your ISA will not have a one-cycle “multiply” operation, so you will need some sort of shift-and-add algorithm. You may restrict your values to positive numbers (MSB = 0) only, with a 1/3-letter grade penalty for the course.  
+
 ```c
 #include <stdint.h>
 #include <stdio.h>
