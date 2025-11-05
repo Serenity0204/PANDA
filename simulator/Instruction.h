@@ -2,9 +2,12 @@
 #define INSTRUCTION_H
 
 #include <stdint.h>
+#define REG_FILE_SIZE 16
+#define MEM_SIZE 256
+
 typedef uint8_t Reg;
 
-enum class OpCode
+enum class OpCode : uint16_t
 {
     ADD = 0,
     ADC,
@@ -60,7 +63,7 @@ public:
 
     // tag to know which view is valid
     Type type;
-
+    OpCode op;
     // R	4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs	ADD, ADC, SUB, AND, OR, XOR, MOV
     // B	4 bits opcode, 1 bit for choosing absolute branching or relative branching, 4 bit relative address/LUT index	BLT, BGT, BEQ
     // CMP	4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs.	CMP
