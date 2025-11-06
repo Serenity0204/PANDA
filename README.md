@@ -195,10 +195,31 @@ int main()
 #include <stdint.h>
 #include <stdio.h>
 
-typedef signed char int8;
+typedef int8_t int8;
+
 
 void robertson_mul_2_num(int8 A, int8 B, int8* upper, int8* lower)
 {
+    // SPECIAL CASE: The algorithm fails for A = -128.
+    // The one case the swap-workaround can't fix is -128 * -128.
+    // -128 * -128 = 16384 (0x4000 in 16-bit)
+    if (A == -128 && B == -128)
+    {
+        *upper = 0x40;
+        *lower = 0x00;
+        return; // Exit early
+    }
+
+    // WORKAROUND: Booth's N-bit algorithm fails when multiplicand A is -2^(N-1) (-128).
+    // Since A*B = B*A, we just swap them if A is -128.
+    // (This is now safe because we've already handled the A=-128, B=-128 case)
+    if (A == -128)
+    {
+        int8 temp = A;
+        A = B;
+        B = temp;
+    }
+
     int8 P = 0;   // accumulator (upper 8 bits)
     int8 Q = B;   // multiplier
     int8 Qm1 = 0; // Q-1, starts at 0
@@ -223,13 +244,16 @@ void robertson_mul_2_num(int8 A, int8 B, int8* upper, int8* lower)
         int8 newQm1 = Q & 1; // save old Q0 before shift
 
         // Shift right Q, bring in P's LSB
-        Q = (Q >> 1) & 0x7F; // logical shift for now
+        // We must do a logical shift right, so we mask with 0x7F
+        Q = (Q >> 1) & 0x7F; 
         if (P & 1)
         {
             Q |= 0x80; // bring P LSB into Q MSB if it was 1
         }
 
         // Arithmetic shift right P
+        // (P >>= 1) is arithmetic for signed types, but this is a
+        // 100% portable way to guarantee it.
         int8 signP = P & 0x80;
         P >>= 1;
         if (signP) P |= 0x80; // keep sign bit
@@ -242,20 +266,68 @@ void robertson_mul_2_num(int8 A, int8 B, int8* upper, int8* lower)
     *lower = Q;
 }
 
+
 int main()
 {
-    int8 a = -15;
-    int8 b = -12;
-    int8 hi, lo;
-    robertson_mul_2_num(a, b, &hi, &lo);
+    // Use 32-bit integers for loop counters to safely iterate
+    // from -128 to 127 without overflow/wrap-around issues.
+    int32_t a_val, b_val;
+    long long pass_count = 0;
+    long long fail_count = 0;
+    long long total_tests = 0;
 
-    // Combine hi:lo into 16-bit just for display
-    int16_t result = ((int16_t)hi << 8) | ((int8_t)lo);
-    printf("%d * %d = %d (hi=%d, lo=%d)\n", a, b, result, hi, lo);
+    printf("Starting exhaustive 8-bit multiplication test (256 * 256 = 65536 cases)...\n");
 
+    for (a_val = -128; a_val <= 127; a_val++)
+    {
+        for (b_val = -128; b_val <= 127; b_val++)
+        {
+            total_tests++;
+            
+            // Cast loop counters to the int8 type for the function
+            int8 a = (int8)a_val;
+            int8 b = (int8)b_val;
+            
+            // Variables to hold the function's output
+            int8 hi, lo;
+            
+            // Calculate the expected result using 16-bit C multiplication
+            int16_t expected_result = (int16_t)a * (int16_t)b;
+            
+            // Run the function
+            robertson_mul_2_num(a, b, &hi, &lo);
+            
+            // Combine the hi/lo output, casting 'lo' to (uint8_t) to prevent sign extension
+            int16_t actual_result = ((int16_t)hi << 8) | ((uint8_t)lo);
+            
+            // Check for mismatch
+            if (expected_result != actual_result)
+            {
+                fail_count++;
+                // Print only the first 100 errors to avoid spamming the console
+                if (fail_count <= 100)
+                {
+                    printf("\nFAIL: %d * %d\n", a, b);
+                    printf("  Expected: %d (0x%04X)\n", expected_result, (uint16_t)expected_result);
+                    printf("  Actual:   %d (0x%04X) [hi=0x%02X, lo=0x%02X]\n", 
+                           actual_result, (uint16_t)actual_result, (uint8_t)hi, (uint8_t)lo);
+                }
+                continue;
+            }
+        pass_count++;
+        }
+    }
+    
+    // Print summary
+    printf("\n\n--- Test Summary ---\n");
+    printf("Total Tests: %lld\n", total_tests);
+    printf("Passed:      %lld\n", pass_count);
+    printf("Failed:      %lld\n", fail_count);
+    
+
+    (fail_count == 0) ? printf("\nSUCCESS: All 65536 test cases passed!\n") : printf("\nFAILURE: %lld test cases failed.\n", fail_count);
     return 0;
 }
-
 ``` 
 
 ### Program 3 Pseudocode
