@@ -11,8 +11,8 @@
    - [Internal Operands](#internal-operands)
    - [Control Flow (Branches)](#control-flow-branches)
    - [Addressing Modes](#addressing-modes)
-4. [Programmer’s Model [Lite]](#programmers-model-lite)
-5. [Program Implementation](#5-program-implementation)
+4. [Programmer’s Model [Lite]](#4-programmers-model-lite)
+6. [Program Implementation](#6-program-implementation)
    - [Program 1 — Maximum and Minimum Hamming Distance](#program-1-pseudocode)
    - [Program 2 — A × B Signed Multiplication](#program-2-pseudocode)
    - [Program 3 — A × B × C Signed Multiplication](#program-3-pseudocode)
@@ -26,6 +26,11 @@
 
 ## 1. Introduction
 The name of this architecture is **PANDA**, stands for *pretty average, not-well designed architecture*. The main goal of this ISA is to provide a smooth and user-friendly programming experience when coding in the PANDA assembly. To achieve this, we designed a special encoding and instructions to provide a large number of registers(16 General Purpose Registers). Additionally, we introduced macro instructions that expand into lower-level instructions, improving usability and readability. The PANDA machine follows a load-store architecture, so users who are familiar with ARMS and MIPS can easily transition to PANDA.
+
+1. Instruction Width: 9 bits
+2. Datapath: 8 bits
+3. Program Counter: 12 bits
+4. CPU: Single Cycle CPU
 
 ## 2. Architectural Overview
 ![Architectural View](img/architecture-overview.png)
@@ -47,7 +52,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 |Instruction Number| NAME | TYPE | OP CODE | BIT BREAKDOWN | EXAMPLE | NOTES |
 |------------------|------|------|---------|---------------|---------|-------|
 |1| ADD = arithmetic add | R | 0000 | 4 bits opcode (0000), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADD R0, R1 ⇔ 0000_0_00_01`, `ADD R0, IM ⇔ 0000_1_00_xx`| After `ADD`, `R0` holds result of `R0 + R1/R0 + IM`, and if there is a carry out, the special purpose register `CARRY=1`|
-|2| ADC = arithmetic add with carry | R | 0001 | 4 bits opcode (0001), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADC R0, R1 ⇔ 0001_0_00_01`, `ADC R0, IM ⇔ 0001_1_00_xx`| After `ADC`, `R0` holds result of `R0 + R1 + CARRY/R0 + IM + CARRY`, after done with `ADC`, special purpose register will be reset to 0, a.k.a `CARRY=0`|
+|2| ADC = arithmetic add with carry | R | 0001 | 4 bits opcode (0001), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADC R0, R1 ⇔ 0001_0_00_01`, `ADC R0, IM ⇔ 0001_1_00_xx`| After `ADC`, `R0` holds result of `R0 + R1 + CARRY/R0 + IM + CARRY`|
 |3| SUB = arithmetic sub | R | 0010 | 4 bits opcode (0010), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `SUB R0, R1 ⇔ 0010_0_00_01`, `SUB R0, IM ⇔ 0010_1_00_xx`| After `SUB`, `R0` holds result of `R0 - R1/R0 - IM`|
 |4| AND = logical and | R | 0011 | 4 bits opcode (0011), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `AND R0, R1 ⇔ 0011_0_00_01`, `AND R0, IM ⇔ 0011_1_00_xx`| After `AND`, `R0` holds result of `R0 & R1/R0 & IM`|
 |5| OR = logical or | R | 0100 | 4 bits opcode (0100), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `OR R0, R1 ⇔ 0100_0_00_01`, `OR R0, IM ⇔ 0100_1_00_xx`| After `OR`, `R0` holds result of `R0 or R1/R0 or IM`|
@@ -71,7 +76,7 @@ There are 16 general purpose registers, 7 special purpose registers.
 | Register | Purpose | Note |
 |----------|---------|---------
 | R0-R15   | General purpose |N/A|
-| CARRY    | Special purpose |For `ADC`, will be set in case of carry out in `ADD`, will be cleared after `ADC`|
+| CARRY    | Special purpose |For `ADC`, will be set in case of carry out in `ADD or ADC`|
 | LT       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`|
 | GT       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`| 
 | EQ       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`| 
@@ -105,15 +110,17 @@ LOAD R1, R0 // this will be R1 <- memory[R0] = memory[10]
 LOAD R1, IM // this will be R1 <- memory[IM] = memory[300]
 ```
 
-## Programmer’s Model [Lite]
+## 4. Programmer’s Model [Lite]
 
 1. Programmer's Strategy: The user should prioritize using as many general purpose registers provided as possible by utilizing the special `SET_REG` instruction. If all of the GPRs are used, the user can load/store stuff from/to memory, the memory operation can happen in between of other operations. If the user wants to use immediate, they must do it via the `LOAD_IMMEDIATE` instructions. For branching, the user can choose to branch relatively or absolutely, whichever they favor to choose.
 
 4. Restrictions: Copying instructions from ARMS/MIPS generally won't work out of the box, due to the PANDA ISA needed `SET_REG` to use the other general purpose registers besides `R0-R3`. Other than that, the user should be careful using the store command in PANDA, since the operands order is differed from ARMS/MIPS(see the operation chart). Other than that, most of the common operations are supported in the PANDA ISA.
 
+## 5. Individual Component Specification
+Individual Component Specification of different modules can be viewed here: [SPEC](docs/individual-component-spec.md)
 
 
-## 5. Program Implementation
+## 6. Program Implementation
 
 
 ### Program 1 Pseudocode
