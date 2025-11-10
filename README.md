@@ -40,7 +40,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 ### Instruction Formats
 | TYPE | FORMAT | CORRESPONDING INSTRUCTIONS |
 |------|--------|-----------------------------|
-| R  | 4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs| ADD, ADC, SUB, AND, OR, XOR, MOV |
+| R  | 4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs| ADD, INC, SUB, AND, OR, XOR, MOV |
 | B    | 4 bits opcode, 1 bit for choosing absolute branching or relative branching, 4 bit relative address/LUT index  | BLT, BGT, BEQ|
 | CMP    |4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs. | CMP |
 | SHIFT  | 4 bits opcode, 1 bit for choosing direction(left or right), 1 bit for choosing it's arithmetics or logical shift, 1 bit unused, 2 bit dest register| SHIFT |
@@ -51,8 +51,8 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 ### Operations
 |Instruction Number| NAME | TYPE | OP CODE | BIT BREAKDOWN | EXAMPLE | NOTES |
 |------------------|------|------|---------|---------------|---------|-------|
-|1| ADD = arithmetic add | R | 0000 | 4 bits opcode (0000), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADD R0, R1 ⇔ 0000_0_00_01`, `ADD R0, IM ⇔ 0000_1_00_xx`| After `ADD`, `R0` holds result of `R0 + R1/R0 + IM`, and if there is a carry out, the special purpose register `CARRY=1`|
-|2| ADC = arithmetic add with carry | R | 0001 | 4 bits opcode (0001), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADC R0, R1 ⇔ 0001_0_00_01`, `ADC R0, IM ⇔ 0001_1_00_xx`| After `ADC`, `R0` holds result of `R0 + R1 + CARRY/R0 + IM + CARRY`|
+|1| ADD = arithmetic add | R | 0000 | 4 bits opcode (0000), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADD R0, R1 ⇔ 0000_0_00_01`, `ADD R0, IM ⇔ 0000_1_00_xx`| After `ADD`, `R0` holds result of `R0 + R1/R0 + IM`|
+|2| INC = arithmetic add one | R | 0001 | 4 bits opcode (0001), 1 don't care(x), 2 bit destination register rd(xx), 2 bit don't care (xx) | `INC R0 ⇔ 0001_x_00_xx`| After `INC`, `R0` holds result of `R0 + 1`|
 |3| SUB = arithmetic sub | R | 0010 | 4 bits opcode (0010), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `SUB R0, R1 ⇔ 0010_0_00_01`, `SUB R0, IM ⇔ 0010_1_00_xx`| After `SUB`, `R0` holds result of `R0 - R1/R0 - IM`|
 |4| AND = logical and | R | 0011 | 4 bits opcode (0011), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `AND R0, R1 ⇔ 0011_0_00_01`, `AND R0, IM ⇔ 0011_1_00_xx`| After `AND`, `R0` holds result of `R0 & R1/R0 & IM`|
 |5| OR = logical or | R | 0100 | 4 bits opcode (0100), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `OR R0, R1 ⇔ 0100_0_00_01`, `OR R0, IM ⇔ 0100_1_00_xx`| After `OR`, `R0` holds result of `R0 or R1/R0 or IM`|
@@ -73,12 +73,11 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 
 
 ### Internal Operands
-There are 16 general purpose registers, 7 special purpose registers.
+There are 16 general purpose registers, 6 special purpose registers.
 
 | Register | Purpose | Note |
 |----------|---------|---------
 | R0-R15   | General purpose |N/A|
-| CARRY    | Special purpose |For `ADC`, will be set in case of carry out in `ADD or ADC`|
 | LT       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`|
 | GT       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`| 
 | EQ       | Special purpose |Will be set in `CMP`, will be cleared in the next instruction after `CMP`| 
