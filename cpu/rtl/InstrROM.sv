@@ -1,5 +1,5 @@
 module InstrROM #(
-    parameter ADDR_WIDTH  = 11,
+    parameter ADDR_WIDTH  = 12,
     parameter INSTR_WIDTH = 9
 ) (
     input  logic [ ADDR_WIDTH-1:0] instr_addr,
@@ -14,8 +14,8 @@ module InstrROM #(
     // combinational read
     assign instr_out = inst_rom[instr_addr];
 
-    // load instruction from an external file(simulation)
-    initial begin
-        $readmemb("machine_code.txt", inst_rom);
-    end
+    // // load instruction from an external file(simulation)
+    // initial begin
+    //     $readmemb("machine_code.txt", inst_rom);
+    // end
 endmodule

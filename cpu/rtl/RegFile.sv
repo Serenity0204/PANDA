@@ -7,13 +7,13 @@ module RegFile #(
     input logic [ADDR_WIDTH-1:0] raddr_A,  // read address A
     input logic [ADDR_WIDTH-1:0] raddr_B,  // read address B
     input logic [ADDR_WIDTH-1:0] waddr,  // write address
-    input logic signed [DATA_PATH_WIDTH-1:0] data_in,  // data to write
-    output logic signed [DATA_PATH_WIDTH-1:0] data_out_A, // output from reading at address A
-    output logic signed [DATA_PATH_WIDTH-1:0] data_out_B  // output from reading at address B
+    input logic [DATA_PATH_WIDTH-1:0] data_in,  // data to write
+    output logic [DATA_PATH_WIDTH-1:0] data_out_A, // output from reading at address A
+    output logic [DATA_PATH_WIDTH-1:0] data_out_B  // output from reading at address B
 );
 
     // DATA_PATH_WIDTH bits wide for each register and 2**ADDR_WIDTH that many registers 	 
-    logic signed [DATA_PATH_WIDTH-1:0] registers[2**ADDR_WIDTH];
+    logic [DATA_PATH_WIDTH-1:0] registers[0:(2**ADDR_WIDTH)-1];
 
     assign data_out_A = registers[raddr_A];
     assign data_out_B = registers[raddr_B];

@@ -19,10 +19,10 @@ module PC #(
     // Determine whether to branch based on condition code
     always_comb begin
         unique case (cond_sel)
-            2'b01:   do_branch = EQ;  // branch if equal
-            2'b10:   do_branch = LT;  // branch if less
-            2'b11:   do_branch = GT;  // branch if greater
-            default: do_branch = 1'b0;  // no branch
+            2'b00: do_branch = 1'b0;  // no branch
+            2'b01: do_branch = EQ;  // branch if equal
+            2'b10: do_branch = LT;  // branch if less
+            2'b11: do_branch = GT;  // branch if greater
         endcase
     end
 

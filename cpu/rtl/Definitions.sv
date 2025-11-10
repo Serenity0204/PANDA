@@ -3,38 +3,38 @@ package Definitions;
     // ==========================================================
     // 4-bit binary opcode constants
     // ==========================================================
-    const logic [3:0] kADD = 4'b0000;
-    const logic [3:0] kADC = 4'b0001;
-    const logic [3:0] kSUB = 4'b0010;
-    const logic [3:0] kAND = 4'b0011;
-    const logic [3:0] kOR = 4'b0100;
-    const logic [3:0] kXOR = 4'b0101;
-    const logic [3:0] kMOV = 4'b0110;
+    localparam logic [3:0] kADD = 4'b0000;
+    localparam logic [3:0] kINC_DEC = 4'b0001;
+    localparam logic [3:0] kSUB = 4'b0010;
+    localparam logic [3:0] kAND = 4'b0011;
+    localparam logic [3:0] kOR = 4'b0100;
+    localparam logic [3:0] kXOR = 4'b0101;
+    localparam logic [3:0] kMOV = 4'b0110;
 
-    const logic [3:0] kBLT = 4'b0111;
-    const logic [3:0] kBGT = 4'b1000;
-    const logic [3:0] kBEQ = 4'b1001;
+    localparam logic [3:0] kBLT = 4'b0111;
+    localparam logic [3:0] kBGT = 4'b1000;
+    localparam logic [3:0] kBEQ = 4'b1001;
 
-    const logic [3:0] kCMP = 4'b1010;
-    const logic [3:0] kSHIFT = 4'b1011;
+    localparam logic [3:0] kCMP = 4'b1010;
+    localparam logic [3:0] kSHIFT = 4'b1011;
 
-    const logic [3:0] kLOAD = 4'b1100;
-    const logic [3:0] kSTORE = 4'b1101;
-    const logic [3:0] kLOAD_IMM = 4'b1110;
-    const logic [3:0] kSET_REG = 4'b1111;
+    localparam logic [3:0] kLOAD = 4'b1100;
+    localparam logic [3:0] kSTORE = 4'b1101;
+    localparam logic [3:0] kLOAD_IMM = 4'b1110;
+    localparam logic [3:0] kFUNC = 4'b1111;
 
 
     // ==========================================================
     // Enumerated mnemonic type (readable + synthesizable)
     // ==========================================================
     typedef enum logic [3:0] {
-        ADD  = kADD,
-        ADC  = kADC,
-        SUB  = kSUB,
+        ADD = kADD,
+        INC_DEC = kINC_DEC,
+        SUB = kSUB,
         AND_ = kAND,
-        OR_  = kOR,
+        OR_ = kOR,
         XOR_ = kXOR,
-        MOV  = kMOV,
+        MOV = kMOV,
 
         BLT = kBLT,
         BGT = kBGT,
@@ -46,7 +46,7 @@ package Definitions;
         LOAD     = kLOAD,
         STORE    = kSTORE,
         LOAD_IMM = kLOAD_IMM,
-        SET_REG  = kSET_REG
+        FUNC     = kFUNC
     } op_mne_t;
 
 

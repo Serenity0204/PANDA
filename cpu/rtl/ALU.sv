@@ -6,108 +6,95 @@ module ALU #(
     // Operands
     input logic [DATA_PATH_WIDTH-1:0] input_A,
     input logic [DATA_PATH_WIDTH-1:0] input_B,
+
     // Decoded control fields
     input logic [3:0] op,  // 4-bit opcode
-    input logic carry_in,  // carry flag or shift-in
-    input logic shift_dir,  // 0 = left, 1 = right  (bit [7] of instruction)
-    input logic shift_type,  // 0 = logical, 1 = arithmetic (bit [6] of instruction)
+    input logic shift_dir,  // 0 = left, 1 = right
+    input logic shift_type,  // 0 = logical, 1 = arithmetic
+    input logic is_dec,  // 0=INC, 1=DEC
     // Results / flags
     output logic [DATA_PATH_WIDTH-1:0] out,
-    output logic CARRY,
     output logic LT,
     output logic GT,
     output logic EQ
 );
 
-    // Readable waveform label
+    // For readable waveform labels
     op_mne_t op_mnemonic;
 
-    // Temp variable with 1 extra bit for carry operations
-    logic [DATA_PATH_WIDTH:0] temp;
+    // Signed internal operands
+    logic signed [DATA_PATH_WIDTH-1:0] inA, inB;
+    assign inA = $signed(input_A);
+    assign inB = $signed(input_B);
 
+    // ==========================================================
+    // Main ALU logic
+    // ==========================================================
     always_comb begin
-        // Default values
-        out   = '0;
-        CARRY = 1'b0;
-        LT    = 1'b0;
-        EQ    = 1'b0;
-        GT    = 1'b0;
+        // Defaults
+        out = '0;
+        LT  = 1'b0;
+        EQ  = 1'b0;
+        GT  = 1'b0;
 
         case (op)
 
-            // ==========================================================
-            // Arithmetic
-            // ==========================================================
-            kADD: begin
-                temp  = input_A + input_B;
-                out   = temp[DATA_PATH_WIDTH-1:0];
-                CARRY = temp[DATA_PATH_WIDTH];  // carry-out
-            end
+            // ==================================================
+            // Arithmetic (signed 2’s complement)
+            // ==================================================
+            kADD: out = inA + inB;
 
-            kADC: begin
-                temp  = input_A + input_B + carry_in;
-                out   = temp[DATA_PATH_WIDTH-1:0];
-                CARRY = temp[DATA_PATH_WIDTH];  // carry-out (keep carry)
-            end
+            kINC_DEC: out = (is_dec) ? inA - 1 : inA + 1;
+            kSUB: out = inA - inB;
 
-            kSUB: begin
-                temp = {1'b0, input_A} - {1'b0, input_B};
-                out  = temp[DATA_PATH_WIDTH-1:0];
-                // no CARRY update needed
-            end
+            // ==================================================
+            // Logical / Move
+            // ==================================================
+            kAND: out = inA & inB;
+            kOR:  out = inA | inB;
+            kXOR: out = inA ^ inB;
+            kMOV: out = inB;
 
-            // ==========================================================
-            // Logical / Data-movement
-            // ==========================================================
-            kAND: out = input_A & input_B;
-            kOR:  out = input_A | input_B;
-            kXOR: out = input_A ^ input_B;
-            kMOV: out = input_B;
-
-            // ==========================================================
-            // Comparison  (sets LT/EQ/GT flags only)
-            // ==========================================================
+            // ==================================================
+            // Compare (sets LT/EQ/GT)
+            // ==================================================
             kCMP: begin
-                if (input_A == input_B) EQ = 1'b1;
-                else if (input_A < input_B) LT = 1'b1;
+                if (inA == inB) EQ = 1'b1;
+                else if (inA < inB) LT = 1'b1;
                 else GT = 1'b1;
             end
 
-            // ==========================================================
-            // SHIFT  (handles all 4 variants)
-            // ==========================================================
+            // ==================================================
+            // SHIFT (4 variants: left/right × logical/arith)
+            // ==================================================
             kSHIFT: begin
                 if (shift_dir == kSHIFT_LEFT) begin
-                    // ---------- LEFT shift ----------
-                    CARRY = input_A[DATA_PATH_WIDTH-1];  // bit shifted out
-                    // left shift always logical in this ISA (arithmetic == logical)
-                    out   = {input_A[DATA_PATH_WIDTH-2:0], carry_in};
+                    // ----- Left shift -----
+                    // arithmetic and logical identical for left
+                    out = {inA[DATA_PATH_WIDTH-2:0], 1'b0};
                 end else begin
-                    // ---------- RIGHT shift ----------
-                    CARRY = input_A[0];  // bit shifted out
+                    // ----- Right shift -----
                     if (shift_type == kARITHMETIC)
                         out = {
-                            input_A[DATA_PATH_WIDTH-1],
-                            input_A[DATA_PATH_WIDTH-1:1]
-                        };  // arithmetic (sign-extend)
-                    else out = {1'b0, input_A[DATA_PATH_WIDTH-1:1]};  // logical
+                            inA[DATA_PATH_WIDTH-1], inA[DATA_PATH_WIDTH-1:1]
+                        };  // sign-extend
+                    else out = {1'b0, inA[DATA_PATH_WIDTH-1:1]};  // logical
                 end
             end
 
-            // ==========================================================
-            // Default / unsupported opcodes
-            // ==========================================================
+            // ==================================================
+            // Default
+            // ==================================================
             default: begin
-                out   = '0;
-                CARRY = 1'b0;
-                LT    = 1'b0;
-                EQ    = 1'b0;
-                GT    = 1'b0;
+                out = '0;
+                LT  = 1'b0;
+                EQ  = 1'b0;
+                GT  = 1'b0;
             end
         endcase
     end
 
-    // For symbolic waveform display
+    // For readable waveform display
     always_comb op_mnemonic = op_mne_t'(op);
 
 endmodule
