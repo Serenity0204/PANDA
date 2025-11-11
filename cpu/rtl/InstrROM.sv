@@ -14,8 +14,8 @@ module InstrROM #(
     // combinational read
     assign instr_out = inst_rom[instr_addr];
 
-    // // load instruction from an external file(simulation)
-    // initial begin
-    //     $readmemb("machine_code.txt", inst_rom);
-    // end
+    // load instruction from an external file(simulation)
+    initial begin
+        $readmemb("machine_code.txt", inst_rom);
+    end
 endmodule

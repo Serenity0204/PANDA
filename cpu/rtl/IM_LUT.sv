@@ -13,12 +13,12 @@ module IM_LUT #(
     // Combinational read
     assign imm_value = im_mem[index];
 
-    // // Load from external file
-    // initial begin
-    //     // File example (binary or hex): one immediate per line
-    //     // 00001010  (10)
-    //     // 11110000  (-16)
-    //     $readmemb("im_lut.txt", im_mem);
-    // end
+    // Load from external file
+    initial begin
+        // File example (binary or hex): one immediate per line
+        // 00001010  (10)
+        // 11110000  (-16)
+        $readmemb("im_lut.txt", im_mem);
+    end
 
 endmodule

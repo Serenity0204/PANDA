@@ -12,10 +12,12 @@
    - [Control Flow (Branches)](#control-flow-branches)
    - [Addressing Modes](#addressing-modes)
 4. [Programmer’s Model [Lite]](#4-programmers-model-lite)
+5. [Individual Component Specification](#5-individual-component-specification)
 6. [Program Implementation](#6-program-implementation)
    - [Program 1 — Maximum and Minimum Hamming Distance](#program-1-pseudocode)
    - [Program 2 — A × B Signed Multiplication](#program-2-pseudocode)
    - [Program 3 — A × B × C Signed Multiplication](#program-3-pseudocode)
+7. [Change Log](#7-change-log)
 
 ## 0. Team Members
 
@@ -53,7 +55,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 |------------------|------|------|---------|---------------|---------|-------|
 |1| ADD = arithmetic add | R | 0000 | 4 bits opcode (0000), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `ADD R0, R1 ⇔ 0000_0_00_01`, `ADD R0, IM ⇔ 0000_1_00_xx`| After `ADD`, `R0` holds result of `R0 + R1/R0 + IM`|
 |2| INC = arithmetic increment one | R | 0001 | 4 bits opcode (0001), 1 bit to choose it's increment(0) or decrement(1), 2 bit destination register rd(xx), 2 bit don't care (xx)| `INC R0 ⇔ 0001_0_00_xx`| After `INC`, `R0` holds result of `R0 + 1`|
-|3| DEC = arithmetic decrement by one | R | 0001 | 4 bits opcode (0001), 1 bit to choose it's increment(0) or decrement(1), 2 bit destination register rd(xx), 2 bit don't care (xx)| `INC R0 ⇔ 0001_1_00_xx`| After `INC`, `R0` holds result of `R0 - 1`|
+|3| DEC = arithmetic decrement by one | R | 0001 | 4 bits opcode (0001), 1 bit to choose it's increment(0) or decrement(1), 2 bit destination register rd(xx), 2 bit don't care (xx)| `DEC R0 ⇔ 0001_1_00_xx`| After `DEC`, `R0` holds result of `R0 - 1`|
 |4| SUB = arithmetic sub | R | 0010 | 4 bits opcode (0010), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `SUB R0, R1 ⇔ 0010_0_00_01`, `SUB R0, IM ⇔ 0010_1_00_xx`| After `SUB`, `R0` holds result of `R0 - R1/R0 - IM`|
 |5| AND = logical and | R | 0011 | 4 bits opcode (0011), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `AND R0, R1 ⇔ 0011_0_00_01`, `AND R0, IM ⇔ 0011_1_00_xx`| After `AND`, `R0` holds result of `R0 & R1/R0 & IM`|
 |6| OR = logical or | R | 0100 | 4 bits opcode (0100), 1 bit for choosing source register rs(0) or use the special register IM(1) as the source(rs will be ignored), 2 bit destination register rd(xx), 2 bit source register rs(xx) | `OR R0, R1 ⇔ 0100_0_00_01`, `OR R0, IM ⇔ 0100_1_00_xx`| After `OR`, `R0` holds result of `R0 or R1/R0 or IM`|
@@ -481,3 +483,12 @@ int main(void)
     return 0;
 }
 ```
+
+## 7. Change Log
+### Milestone 3
+### Milestone 2
+- Removed the `ADC` instruction and changed it to `INC/DEC`.
+- Added `HALT` and `NOOP` special instruction to handle the sending done sinal logic.
+- Changed program 2 pseudocode to fully test the correctness of the algorithm 
+### Milestone 1
+- Initial version

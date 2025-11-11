@@ -11,11 +11,11 @@ module PC_LUT #(
     assign next_pc = lut_mem[index];
 
 
-    // // Initialize from external text file
-    // initial begin
-    //     // Each line in pc_lut.txt should contain one binary or hex value, e.g.:
-    //     // 000000000011
-    //     // 000000101100
-    //     $readmemb("pc_lut.txt", lut_mem);
-    // end
+    // Initialize from external text file
+    initial begin
+        // Each line in pc_lut.txt should contain one binary or hex value, e.g.:
+        // 000000000011
+        // 000000101100
+        $readmemb("pc_lut.txt", lut_mem);
+    end
 endmodule
