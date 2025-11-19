@@ -1,0 +1,30 @@
+.Zero -> 0x00
+.One    -> 0x01
+.Two->   0x02
+.Three->0x03
+
+
+
+# this is the first label
+@LStart:
+    MOV R0, R1
+
+
+# this is the second label
+@LMid:
+    ADD R0, R0
+    SUB R0, R0
+
+
+# this is the 3rd label
+@LEnd:
+    NOOP
+    NOOP
+
+
+# this is the 4th label
+@LDone:
+    HALT
+
+
+.FF->0xFF

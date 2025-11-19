@@ -1,3 +1,5 @@
 simulator/sim
 .vscode/
 cpu/rtl/*.txt
+
+assembler/__pycache__

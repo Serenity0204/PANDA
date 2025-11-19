@@ -1,4 +1,6 @@
 import sys
+import re
+
 
 OPCODE = {
     # --------------------------
@@ -18,6 +20,13 @@ OPCODE = {
     "BLT": "0111",
     "BGT": "1000",
     "BEQ": "1001",
+    # BRANCH alias
+    "BLT_RELATIVE": "0111",
+    "BLT_ABSOLUTE": "0111",
+    "BGT_RELATIVE": "1000",
+    "BGT_ABSOLUTE": "1000",
+    "BEQ_RELATIVE": "1001",
+    "BEQ_ABSOLUTE": "1001",
     # --------------------------
     # CMP
     # --------------------------
@@ -27,13 +36,18 @@ OPCODE = {
     # direction + logical/arith handled separately
     # --------------------------
     "SHIFT": "1011",
+    # SHIFT alias
+    "SHIFT_LEFT_LOGICAL": "1011",
+    "SHIFT_RIGHT_LOGICAL": "1011",
+    "SHIFT_LEFT_ARITHMETIC": "1011",
+    "SHIFT_RIGHT_ARITHMETIC": "1011",
     # --------------------------
     # MEMORY OPS
     # --------------------------
     "LOAD": "1100",
     "STORE": "1101",
     # --------------------------
-    # IMM / LUT
+    # IMM
     # --------------------------
     "LOAD_IMMEDIATE": "1110",
     # --------------------------
@@ -45,12 +59,82 @@ OPCODE = {
 }
 
 
-def parse_immediate():
-    pass
+def error(msg):
+    print(f"\nERROR: {msg}\n")
+    sys.exit(1)
 
 
-def parse_label():
-    pass
+# ============================================
+# FIRST PASS — COLLECT LABELS
+# ============================================
+
+
+def collect_labels(lines):
+    labels = {}
+    pc = 0
+    for line in lines:
+        line = line.strip()
+        # skipping the empty line
+        if not line:
+            continue
+        # skipping comment
+        is_comment = len(line) >= 1 and "#" in line and line[0:1] == "#"
+        if is_comment:
+            continue
+        # skipping immediate
+        is_immediate = len(line) >= 1 and "." in line and line[0:1] == "."
+        if is_immediate:
+            continue
+
+        # check if it's label
+        is_label = len(line) > 2 and ":" in line and line[0:2] == "@L"
+
+        if is_label:
+            name = line.split(":")[0].strip()
+            labels[name] = pc
+            continue
+        # if valid instruction, increment PC
+        if line:
+            pc += 1
+    return labels
+
+
+def collect_immediates(lines):
+    pattern = re.compile(r"(\.\w+)\s*->\s*(0x[0-9A-Fa-f]+)")
+
+    # need 2 maps, one is index->immediate value, the other one is immediate name->index
+    immediate_index_to_value = {}  # index->immediate value
+    immediate_name_to_index = {}  # name->index
+    index = 0
+    for line in lines:
+        line = line.strip()
+        # skipping the empty line
+        if not line:
+            continue
+        # skipping comment
+        is_comment = len(line) >= 1 and "#" in line and line[0:1] == "#"
+        if is_comment:
+            continue
+
+        # check if it's immediate
+        is_immediate = len(line) >= 1 and "." in line and line[0:1] == "."
+        if is_immediate:
+            imm = pattern.search(line)
+            if imm:
+                name = imm.group(1)
+                value = imm.group(2)
+                int_value = int(value, 16)
+                bin_value = format(int_value, "08b")
+                immediate_name_to_index[name] = index
+                immediate_index_to_value[index] = bin_value
+                index += 1
+    # first one is name->index, second one is index->value
+    return immediate_name_to_index, immediate_index_to_value
+
+
+# ============================================================
+# Encoders (simple versions)
+# ============================================================
 
 
 def convert():
