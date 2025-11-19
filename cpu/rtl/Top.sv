@@ -215,11 +215,16 @@ module Top (
             LT_reg <= 1'b0;
             EQ_reg <= 1'b0;
             GT_reg <= 1'b0;
+            DEST_REG_IDX <= 2'b00;
+            SRC_REG_IDX <= 2'b00;
         end else if (halt_en) begin
+            IM <= '0;
             LT_reg <= 1'b0;
             EQ_reg <= 1'b0;
             GT_reg <= 1'b0;
-            done   <= 1'b1;
+            done <= 1'b1;
+            DEST_REG_IDX <= 2'b00;
+            SRC_REG_IDX <= 2'b00;
         end else begin
             if (alu_op == kCMP) begin
                 // Latch ALU flags when executing CMP
