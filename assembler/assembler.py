@@ -283,9 +283,6 @@ def convert():
     pass
 
 
-1
-
-
 def main():
     print("PANDA Assembler🐼\n")
 
