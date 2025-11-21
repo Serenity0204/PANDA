@@ -8,6 +8,8 @@ from assembler import (
     encode_branch,
     encode_load_imm,
     encode_functional,
+    encode_mem,
+    assemble_lines,
 )
 import os
 
@@ -56,7 +58,7 @@ def test_collect_labels1():
 
 
 def test_collect_labels2():
-    filepath = os.path.join(BASE_DIR, "PANDA_ASM_MOCK", "collect_label.PANDA_ASM")
+    filepath = os.path.join(BASE_DIR, "PANDA_ASM_MOCK", "test.PANDA_ASM")
     # Read all lines from file
     with open(filepath, "r") as f:
         lines = f.readlines()
@@ -75,7 +77,7 @@ def test_collect_labels2():
 
 
 def test_collect_immediates():
-    filepath = os.path.join(BASE_DIR, "PANDA_ASM_MOCK", "collect_label.PANDA_ASM")
+    filepath = os.path.join(BASE_DIR, "PANDA_ASM_MOCK", "test.PANDA_ASM")
     # Read all lines from file
     with open(filepath, "r") as f:
         lines = f.readlines()
@@ -136,6 +138,13 @@ def test_encode():
     LABELS = {"@LPanda": 12}
     assert encode_branch("BLT_RELATIVE", offset=4) == "011100100"
     assert encode_branch("BLT_ABSOLUTE", label="@LPanda", LABELS=LABELS) == "011111100"
+    ## MEMORY
+    # load
+    assert encode_mem("LOAD", "R2", "R3") == "110001011"
+    assert encode_mem("LOAD", "R0", "IM") == "110010000"
+    # store
+    assert encode_mem("STORE", "R2", "R3") == "110101011"
+    assert encode_mem("STORE", "R0", "IM") == "110110000"
     ## LOAD_IMMEDIATE
     IMMEDIATE_NAME_TO_INDEX = {".IMM29": 29}
     assert (
@@ -154,9 +163,32 @@ def test_encode():
     print("test_encode passed")
 
 
+def test_assemble():
+    filepath = os.path.join(BASE_DIR, "PANDA_ASM_MOCK", "test.PANDA_ASM")
+    # Read all lines from file
+    with open(filepath, "r") as f:
+        lines = f.readlines()
+    output = assemble_lines(lines)
+    expected = [
+        "011000001",
+        "000000000",
+        "001000000",
+        "111110000",
+        "111110000",
+        "111111111",
+    ]
+    i = 0
+    for out in output:
+        for _, bits in out.items():
+            assert expected[i] == bits
+            i += 1
+    print("test_assemble passed")
+
+
 if __name__ == "__main__":
     test_collect_labels1()
     test_collect_labels2()
     test_collect_immediates()
     test_encode()
+    test_assemble()
     print("Congrats! All Correct.")

@@ -91,6 +91,21 @@ def reg_to_index(r):
     return f"{index:02b}"
 
 
+def encode_helper(op, dest, src):
+    opcode = OPCODE.get(op)
+    if opcode is None:
+        error(f"Invalid op:{op}")
+
+    rd = reg_to_index(dest)
+    if src.upper() == "IM":
+        imm_bit = "1"
+        rs = "00"
+    else:
+        imm_bit = "0"
+        rs = reg_to_index(src)
+    return opcode + imm_bit + rd + rs
+
+
 # ============================================
 # FIRST PASS — COLLECT LABELS and COLLECT IMMEDIATES
 # ============================================
@@ -163,18 +178,7 @@ def collect_immediates(lines):
 
 
 def encode_r_type(op, dest, src):
-    opcode = OPCODE.get(op)
-    if opcode is None:
-        error(f"Invalid op:{op}")
-
-    rd = reg_to_index(dest)
-    if src.upper() == "IM":
-        imm_bit = "1"
-        rs = "00"
-    else:
-        imm_bit = "0"
-        rs = reg_to_index(src)
-    return opcode + imm_bit + rd + rs
+    return encode_helper(op, dest, src)
 
 
 def encode_inc_dec(op, dest):
@@ -191,18 +195,7 @@ def encode_inc_dec(op, dest):
 
 
 def encode_cmp(op, dest, src):
-    opcode = OPCODE.get(op)
-    if opcode is None:
-        error(f"Invalid op:{op}")
-
-    rd = reg_to_index(dest)
-    if src.upper() == "IM":
-        imm_bit = "1"
-        rs = "00"
-    else:
-        imm_bit = "0"
-        rs = reg_to_index(src)
-    return opcode + imm_bit + rd + rs
+    return encode_helper(op, dest, src)
 
 
 def encode_shift(op, dest):
@@ -245,6 +238,10 @@ def encode_branch(op, offset=None, label=None, LABELS=None):
         return opcode + mode_bit + index_bits
 
 
+def encode_mem(op, dest, src):
+    return encode_helper(op, dest, src)
+
+
 def encode_load_imm(op, immediate, IMMEDIATE_NAME_TO_INDEX):
     opcode = OPCODE.get(op)
     if opcode is None:
@@ -279,12 +276,155 @@ def encode_functional(op, dest_ext=None, src_ext=None):
     return opcode + choose_set_reg_bit + dest_bits + src_bits
 
 
-def convert():
-    pass
+# ============================================
+# SECOND PASS — ASSEMBLE
+# ============================================
+def assemble_lines(lines, debug=False):
+    LABELS = collect_labels(lines)
+    IMMEDIATE_NAME_TO_INDEX, IMMEDIATE_INDEX_TO_VALUE = collect_immediates(lines)
+
+    output = []
+    pc = 0
+    for line in lines:
+        line = line.strip()
+        # skipping the empty line
+        if not line:
+            continue
+        # skipping comment
+        is_comment = len(line) >= 1 and "#" in line and line[0:1] == "#"
+        if is_comment:
+            continue
+
+        # skip immediate
+        is_immediate = len(line) >= 1 and "." in line and line[0:1] == "."
+        if is_immediate:
+            continue
+        # skip label
+        is_label = len(line) > 2 and ":" in line and line[0:2] == "@L"
+        if is_label:
+            continue
+
+        tokens = line.replace(",", " ").split()
+        instr = ",".join(tokens)
+
+        if not tokens:
+            error(f"error in parsing tokens for line={line}")
+
+        op = tokens[0].upper()
+        bits = None
+
+        if op in ("ADD", "SUB", "AND", "OR", "XOR", "MOV"):
+            if len(tokens) < 3:
+                error(f"error parsing instruction={line}")
+            dest = tokens[1]
+            src = tokens[2]
+            bits = encode_r_type(op=op, dest=dest, src=src)
+        elif op in ("INC", "DEC"):
+            if len(tokens) < 2:
+                error(f"error parsing instruction={line}")
+            dest = tokens[1]
+            bits = encode_inc_dec(op=op, dest=dest)
+        elif op in (
+            "BLT_RELATIVE",
+            "BLT_ABSOLUTE",
+            "BGT_RELATIVE",
+            "BGT_ABSOLUTE",
+            "BEQ_RELATIVE",
+            "BEQ_ABSOLUTE",
+        ):
+            if len(tokens) < 2:
+                error(f"error parsing instruction={line}")
+            parts = op.split("_")
+            mode = parts[1]
+            if mode.upper() == "RELATIVE":
+                offset = tokens[1]
+                bits = encode_branch(op=op, offset=offset)
+            else:
+                label = tokens[1]
+                bits = encode_branch(op=op, label=label, LABELS=LABELS)
+        elif op == "CMP":
+            if len(tokens) < 3:
+                error(f"error parsing instruction={line}")
+            dest = tokens[1]
+            src = tokens[2]
+            bits = encode_cmp(op=op, dest=dest, src=src)
+        elif op in (
+            "SHIFT_LEFT_LOGICAL",
+            "SHIFT_RIGHT_LOGICAL",
+            "SHIFT_LEFT_ARITHMETIC",
+            "SHIFT_RIGHT_ARITHMETIC",
+        ):
+            if len(tokens) < 2:
+                error(f"error parsing instruction={line}")
+            dest = tokens[1]
+            bits = encode_shift(op=op, dest=dest)
+        elif op in ("LOAD", "STORE"):
+            if len(tokens) < 3:
+                error(f"error parsing instruction={line}")
+            dest = tokens[1]
+            src = tokens[2]
+            bits = encode_mem(op=op, dest=dest, src=src)
+        elif op == "LOAD_IMMEDIATE":
+            if len(tokens) < 2:
+                error(f"error parsing instruction={line}")
+            immediate = tokens[1]
+            bits = encode_load_imm(
+                op=op,
+                immediate=immediate,
+                IMMEDIATE_NAME_TO_INDEX=IMMEDIATE_NAME_TO_INDEX,
+            )
+        elif op == "SET_REG":
+            if len(tokens) < 3:
+                error(f"error parsing instruction={line}")
+            dest_ext = tokens[1]
+            src_ext = tokens[2]
+            bits = encode_functional(op=op, dest_ext=dest_ext, src_ext=src_ext)
+        elif op in ("HALT", "NOOP"):
+            if len(tokens) != 1:
+                error(f"error parsing instruction={line}")
+            bits = encode_functional(op=op)
+        else:
+            error(f"Unknown instruction op:{line}")
+
+        if bits is None:
+            error("bits somehow not assigned")
+        output.append({instr: bits})
+        pc += 1
+
+    return output
+
+
+def convert(file, debug=False):
+    # read the file
+    with open(file, "r") as f:
+        lines = f.readlines()
+    output = assemble_lines(lines)
+
+    # collect all instruction names to compute max width
+    instr_names = []
+    for out in output:
+        instr_names.extend(out.keys())
+    max_len = max(len(instr) for instr in instr_names)
+
+    for out in output:
+        for instr, bits in out.items():
+            if debug:
+                # Print "instr:" but don't break alignment
+                print(f"{instr:<{max_len}} :", bits)
+            else:
+                # Normal aligned output
+                print(f"{instr:<{max_len}} {bits}")
 
 
 def main():
     print("PANDA Assembler🐼\n")
+    if len(sys.argv) != 2:
+        error(f"usage: make assemble <your.PANDA_ASM file>")
+
+    file = sys.argv[1]
+    if not file.upper().endswith(".PANDA_ASM"):
+        error(f"usage: make assemble <your.PANDA_ASM file>")
+    convert(file, True)
 
 
 if __name__ == "__main__":

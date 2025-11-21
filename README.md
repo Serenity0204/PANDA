@@ -42,7 +42,7 @@ The name of this architecture is **PANDA**, stands for *pretty average, not-well
 ### Instruction Formats
 | TYPE | FORMAT | CORRESPONDING INSTRUCTIONS |
 |------|--------|-----------------------------|
-| R  | 4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs| ADD, INC, SUB, AND, OR, XOR, MOV |
+| R  | 4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs| ADD, INC, DEC, SUB, AND, OR, XOR, MOV |
 | B    | 4 bits opcode, 1 bit for choosing absolute branching or relative branching, 4 bit relative address/LUT index  | BLT, BGT, BEQ|
 | CMP    |4 bits opcode, 1 bit for choosing source register rs or use the special register IM as the source(rs will be ignored), 2 bit destination register rd, 2 bit source register rs. | CMP |
 | SHIFT  | 4 bits opcode, 1 bit for choosing direction(left or right), 1 bit for choosing it's arithmetics or logical shift, 1 bit unused, 2 bit dest register| SHIFT |
