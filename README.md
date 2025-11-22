@@ -135,7 +135,7 @@ Individual Component Specification of different modules can be viewed here: [SPE
 #include <stdio.h>
 #include <stdlib.h>
 
-uint8_t max = 0;
+uint8_t max = 0b00000000;
 uint8_t min = 0b11111111;
 
 void hamming_distance()
@@ -147,7 +147,6 @@ void hamming_distance()
     uint8_t arr[] = {num1, num2, num3};
     uint8_t size = 3;
 
-    // find max
     for (int i = 0; i < size; i++)
     {
         for (int j = i + 1; j < size; j++)
@@ -164,27 +163,9 @@ void hamming_distance()
                 distance = distance + (x & 1);
                 x >>= 1;
             }
+            
+            // update max and min
             if (distance > max) max = distance;
-        }
-    }
-
-    // find min
-    for (int i = 0; i < size; i++)
-    {
-        for (int j = i + 1; j < size; j++)
-        {
-            uint8_t a = arr[i];
-            uint8_t b = arr[j];
-
-            uint8_t x = a ^ b;
-            uint8_t distance = 0;
-
-            while (1)
-            {
-                if (x == 0) break;
-                distance = distance + (x & 1);
-                x >>= 1;
-            }
             if (distance < min) min = distance;
         }
     }
@@ -196,7 +177,6 @@ int main()
     printf("Hamming distance max is %u and Hamming distance min is %u", max, min);
     return 0;
 }
-
 ```
 
 ### Program 2 Pseudocode

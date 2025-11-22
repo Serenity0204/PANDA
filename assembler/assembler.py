@@ -398,8 +398,11 @@ def convert(file, debug=False):
     # read the file
     with open(file, "r") as f:
         lines = f.readlines()
+    if len(lines) == 0:
+        error(f"Empty file to assemble: {file}")
     output = assemble_lines(lines)
-
+    if len(output) == 0:
+        error(f"No instruction to assemble: {file}")
     # collect all instruction names to compute max width
     instr_names = []
     for out in output:
