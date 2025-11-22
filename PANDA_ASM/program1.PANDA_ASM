@@ -1,9 +1,11 @@
 # uint8_t max = 0;
 # uint8_t min = 0b11111111;
 # uint8_t size = 16;
+# uint8_t arr[] = {num1, num2, num3, num4, ..., num16};  
+
+
 # void hamming_distance()
 # {
-#     uint8_t arr[] = {num1, num2, num3, num4, ..., num16};  
 #     for (int i = 0; i < size; i++)
 #     {
 #         for (int j = i + 1; j < size; j++)
@@ -25,18 +27,63 @@
 #     }
 # }
 
-# int main()
-# {
-#     hamming_distance();
-#     printf("Hamming distance max is %u and Hamming distance min is %u", max, min);
-#     return 0;
-# }
+
+.IMM_0x00->0x00
+.IMM_0x01->0x01
+.IMM_0xFF->0xFF
+# For size - 1
+.IMM_0x0F->0x0F
+
+# Prepare R0(i) = 0, R1(j) = 0, R2(size - 1) = 15, 
+# R14(Always zero) = 0x00, R15(Always zero) = 0x00
 
 
-.Zero->0x00
-.One->0x01
-.FF->0xFF
-.80->0x80
+# i
+LOAD_IMMEDIATE .IMM_0x00
+MOV R0, IM
+
+# j
+LOAD_IMMEDIATE .IMM_0x00
+MOV R1, IM
+
+# size - 1
+LOAD_IMMEDIATE .IMM_0x0F
+MOV R2, IM
+
+# R14 Always 0
+# done by using new rd = DEST_REG_IDX*4 + rd = (DEST=3, rd=2)
+LOAD_IMMEDIATE .IMM_0x00
+SET_REG 3, 0
+MOV R2, IM
+
+# R15 Always 0
+# done by using new rd = DEST_REG_IDX*4 + rd = (DEST=3, rd=3)
+LOAD_IMMEDIATE .IMM_0x00
+SET_REG 3, 0
+MOV R3, IM
 
 
-HALT
+@LOuterLoop:
+    # while i < size
+    CMP R0, R2
+    # if if (i(R0) > size - 1(R2)) return
+    BGT_ABSOLUTE @LDone
+
+    # j = i + 1, so R1 = R0 + 1, we need to do it in 2 steps, inc R1, then add R0 to R1
+    INC R1
+    ADD R1, R0
+
+@LInnerLoop:
+    # if (j(R1) > size - 1(R2)) break inner loop
+    CMP R1, R2
+    BGT_ABSOLUTE @LNexti
+
+
+
+
+@LNexti:
+    # i++
+    INC R0
+    # compare R14 to R15 to get always True
+@LDone:
+    HALT

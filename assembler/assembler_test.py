@@ -19,11 +19,13 @@ BASE_DIR = os.path.dirname(__file__)
 def test_collect_labels1():
     # Test 1: single label
     lines = ["@Lstart:", "mov r0, r1"]
-    assert collect_labels(lines) == {"@Lstart": 0}
+    res1, _ = collect_labels(lines)
+    assert res1 == {"@Lstart": 0}
 
     # Test 2: label with blank lines
     lines = ["", "@Lstart:", "", "add r0, r2"]
-    assert collect_labels(lines) == {"@Lstart": 0}
+    res1, _ = collect_labels(lines)
+    assert res1 == {"@Lstart": 0}
 
     # Test 3: multiple labels
     lines = [
@@ -35,16 +37,19 @@ def test_collect_labels1():
         "@Lthree:",
         "noop",
     ]
+    # first one is name->index, second one is index->PC
     expected = {
         "@Lone": 0,
         "@Ltwo": 1,
-        "@Lthree": 3,
+        "@Lthree": 2,
     }
-    assert collect_labels(lines) == expected
+    res1, _ = collect_labels(lines)
+    assert res1 == expected
 
     # Test 4: label and instruction on same line
     lines = ["@Lstart: mov r0, r1", "add r0, r0"]
-    assert collect_labels(lines) == {"@Lstart": 0}
+    res1, _ = collect_labels(lines)
+    assert res1 == {"@Lstart": 0}
 
     # Test 5: no labels
     lines = [
@@ -52,8 +57,8 @@ def test_collect_labels1():
         "ADD r0, r1",
         "SUB r1, r1",
     ]
-    assert collect_labels(lines) == {}
-
+    res1, _ = collect_labels(lines)
+    assert res1 == {}
     print("test_collect_labels1 passed")
 
 
@@ -63,15 +68,23 @@ def test_collect_labels2():
     with open(filepath, "r") as f:
         lines = f.readlines()
 
-    result = collect_labels(lines)
+    res1, res2 = collect_labels(lines)
 
-    expected = {
+    expected1 = {
         "@LStart": 0,
         "@LMid": 1,
-        "@LEnd": 3,
-        "@LDone": 5,
+        "@LEnd": 2,
+        "@LDone": 3,
     }
-    assert result == expected, f"Expected {expected}, got {result}"
+
+    expected2 = {
+        0: 0,
+        1: 1,
+        2: 3,
+        3: 5,
+    }
+
+    assert res1 == expected1 and res2 == expected2
 
     print("test_collect_labels2 passed")
 
@@ -135,9 +148,15 @@ def test_encode():
     assert encode_shift("SHIFT_LEFT_ARITHMETIC", "R2") == "101101010"
     assert encode_shift("SHIFT_RIGHT_ARITHMETIC", "R2") == "101111010"
     ## BRANCH
-    LABELS = {"@LPanda": 12}
+    LABELS_NAME_TO_INDEX = {"@LPanda": 12}
     assert encode_branch("BLT_RELATIVE", offset=4) == "011100100"
-    assert encode_branch("BLT_ABSOLUTE", label="@LPanda", LABELS=LABELS) == "011111100"
+    assert (
+        encode_branch(
+            "BLT_ABSOLUTE", label="@LPanda", LABELS_NAME_TO_INDEX=LABELS_NAME_TO_INDEX
+        )
+        == "011111100"
+    )
+
     ## MEMORY
     # load
     assert encode_mem("LOAD", "R2", "R3") == "110001011"

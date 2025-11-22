@@ -1,6 +1,6 @@
 import sys
 import re
-
+from collections import OrderedDict
 
 OPCODE = {
     # --------------------------
@@ -59,9 +59,11 @@ OPCODE = {
 }
 
 # Global Lookups
-IMMEDIATE_INDEX_TO_VALUE = {}  # index->immediate value
-IMMEDIATE_NAME_TO_INDEX = {}  # name->index
-LABELS = {}  # labels
+IMMEDIATE_INDEX_TO_VALUE = None  # index->immediate value
+IMMEDIATE_NAME_TO_INDEX = None  # name->index
+
+LABELS_NAME_TO_INDEX = None  # labels to index
+LABELS_INDEX_TO_PC = None  # labels index to PC
 
 
 # ============================================
@@ -110,8 +112,12 @@ def encode_helper(op, dest, src):
 # FIRST PASS — COLLECT LABELS and COLLECT IMMEDIATES
 # ============================================
 def collect_labels(lines):
-    labels = {}
+    labels_name_to_index = OrderedDict()
+    labels_index_to_pc = OrderedDict()
+
+    index = 0
     pc = 0
+
     for line in lines:
         line = line.strip()
         # skipping the empty line
@@ -131,20 +137,23 @@ def collect_labels(lines):
 
         if is_label:
             name = line.split(":")[0].strip()
-            labels[name] = pc
+            labels_name_to_index[name] = index
+            labels_index_to_pc[index] = pc
+            index += 1
             continue
+
         # if valid instruction, increment PC
         if line:
             pc += 1
-    return labels
+    return labels_name_to_index, labels_index_to_pc
 
 
 def collect_immediates(lines):
     pattern = re.compile(r"(\.\w+)\s*->\s*(0x[0-9A-Fa-f]+)")
 
     # need 2 maps, one is index->immediate value, the other one is immediate name->index
-    immediate_index_to_value = {}  # index->immediate value
-    immediate_name_to_index = {}  # name->index
+    immediate_index_to_value = OrderedDict()  # index->immediate value
+    immediate_name_to_index = OrderedDict()  # name->index
     index = 0
     for line in lines:
         line = line.strip()
@@ -214,7 +223,7 @@ def encode_shift(op, dest):
     return opcode + dir_bit + type_bit + unused + rd
 
 
-def encode_branch(op, offset=None, label=None, LABELS=None):
+def encode_branch(op, offset=None, label=None, LABELS_NAME_TO_INDEX=None):
     opcode = OPCODE.get(op)
     if opcode is None:
         error(f"Invalid op:{op}")
@@ -229,11 +238,13 @@ def encode_branch(op, offset=None, label=None, LABELS=None):
         offset_bits = format(offset_int & 0b1111, "04b")
         return opcode + mode_bit + offset_bits
     else:
-        if LABELS is None:
+        if LABELS_NAME_TO_INDEX is None:
             error("Absolute branch missing label")
         # look up the label index
-        index = LABELS.get(label)
+        index = LABELS_NAME_TO_INDEX.get(label)
         # convert index to 4 bits
+        assert 0 <= index <= 15
+
         index_bits = format(index, "04b")
         return opcode + mode_bit + index_bits
 
@@ -280,8 +291,32 @@ def encode_functional(op, dest_ext=None, src_ext=None):
 # SECOND PASS — ASSEMBLE
 # ============================================
 def assemble_lines(lines, debug=False):
-    LABELS = collect_labels(lines)
+    LABELS_NAME_TO_INDEX, LABELS_INDEX_TO_PC = collect_labels(lines)
     IMMEDIATE_NAME_TO_INDEX, IMMEDIATE_INDEX_TO_VALUE = collect_immediates(lines)
+
+    if debug:
+        print("Labels encoding name to index:")
+        for key, value in LABELS_NAME_TO_INDEX.items():
+            print(f"{key}: {value}")
+        print("")
+
+        print("Labels encoding index to pc:")
+        for key, value in LABELS_INDEX_TO_PC.items():
+            print(f"{key}: {value}")
+        print("")
+
+        print("Immediates encoding name to index:")
+        for key, value in IMMEDIATE_NAME_TO_INDEX.items():
+            print(f"{key}: {value}")
+        print("")
+
+        print("Immediates encoding index to value:")
+        for key, value in IMMEDIATE_INDEX_TO_VALUE.items():
+            print(f"{key}: {value}")
+        print("")
+
+    if debug:
+        print("Instruction encodings:")
 
     output = []
     pc = 0
@@ -341,7 +376,9 @@ def assemble_lines(lines, debug=False):
                 bits = encode_branch(op=op, offset=offset)
             else:
                 label = tokens[1]
-                bits = encode_branch(op=op, label=label, LABELS=LABELS)
+                bits = encode_branch(
+                    op=op, label=label, LABELS_NAME_TO_INDEX=LABELS_NAME_TO_INDEX
+                )
         elif op == "CMP":
             if len(tokens) < 3:
                 error(f"error parsing instruction={line}")
@@ -390,7 +427,6 @@ def assemble_lines(lines, debug=False):
             error("bits somehow not assigned")
         output.append({instr: bits})
         pc += 1
-
     return output
 
 
@@ -400,7 +436,7 @@ def convert(file, debug=False):
         lines = f.readlines()
     if len(lines) == 0:
         error(f"Empty file to assemble: {file}")
-    output = assemble_lines(lines)
+    output = assemble_lines(lines, debug)
     if len(output) == 0:
         error(f"No instruction to assemble: {file}")
     # collect all instruction names to compute max width
